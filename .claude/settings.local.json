@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s --max-time 5 -G \"http://localhost:8000/api/v1/pois\" --data-urlencode \"city_name=成都\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s http://localhost:8000/openapi.json)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); paths=list\\(d['paths'].keys\\(\\)\\); [print\\(p\\) for p in paths]\")",
+      "Bash(python3 -m pytest tests/ -v --tb=short)",
+      "Bash(pip list *)",
+      "Bash(.venv/bin/python *)",
+      "Bash(redis-cli ping *)",
+      "Bash(mysqladmin ping *)",
+      "Bash(mysql -u travel_planner -pchangeme -e \"SELECT 1\")",
+      "Bash(mysql *)",
+      "Bash(npm run *)",
+      "Bash(kill 36796)",
+      "Bash(kill 21619)",
+      "Bash(curl -s http://localhost:8000/api/v1/health)",
+      "Bash(curl -s http://localhost:8000/api/v1/cities)",
+      "Bash(.venv/bin/pip list *)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs kill)",
+      "Bash(awk '{for\\(i=11;i<=NF;i++\\) printf \"%s \", $i; print \"\"}')",
+      "Bash(xargs kill -9)",
+      "Bash(.venv/bin/pip show *)",
+      "Bash(kill 64992 64996 57759 26019)",
+      "Bash(brew services *)",
+      "Bash(chmod +x *)",
+      "Bash(bash *)",
+      "Bash(lsof -i :6379 -i :8000 -i :3000 -P -sTCP:LISTEN)",
+      "Bash(awk '{print $1, $2, $9}')",
+      "Bash(kill 67551 67558 67578 67534)",
+      "Bash(kill 42187 42192 42207 38122)",
+      "Bash(git init *)",
+      "Bash(git branch *)",
+      "Bash(git add *)"
+    ]
+  }
+}

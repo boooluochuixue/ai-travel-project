@@ -1,0 +1,80 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: tp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: travel_planner
+      MYSQL_USER: travel_planner
+      MYSQL_PASSWORD: changeme
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    container_name: tp-api
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: travel_planner
+      DB_PASSWORD: changeme
+      DB_NAME: travel_planner
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_DEBUG: "true"
+    env_file:
+      - .env
+
+  agent-worker:
+    build: .
+    container_name: tp-agent-worker
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: travel_planner
+      DB_PASSWORD: changeme
+      DB_NAME: travel_planner
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_DEBUG: "true"
+    command: python -m src.services.queue.consumer
+    env_file:
+      - .env
+
+volumes:
+  mysql_data:
+  redis_data:
