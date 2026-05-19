@@ -7,5 +7,6 @@ import src.agent.tools.weather_tools  # noqa: F401
 import src.agent.tools.budget_tools  # noqa: F401
 import src.agent.tools.schedule_tools  # noqa: F401
 import src.agent.tools.search_rag_tools  # noqa: F401
+import src.agent.tools.hotel_tools  # noqa: F401
 
 __all__: list[str] = []

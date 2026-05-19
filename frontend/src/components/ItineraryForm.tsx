@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, Plus, Trash2, Loader2, Lightbulb, Wrench } from 'lucide-react'
+import { MapPin, Plus, Trash2, Loader2 } from 'lucide-react'
 
 import { generateItinerary, streamGeneration } from '@/lib/api'
 import type { Destination } from '@/types'
@@ -17,11 +17,13 @@ const CITIES = [
 
 const INTEREST_OPTIONS = ['历史', '文化', '美食', '自然', '购物', '艺术', '户外', '亲子']
 
-interface ProgressEvent {
-  progress: number
-  thought?: string
-  toolCalls: { name: string; input: unknown }[]
-}
+const PROGRESS_STAGES = [
+  'AI 正在分析旅行需求...',
+  '正在搜索景点信息...',
+  '正在规划行程安排...',
+  '正在推荐住宿酒店...',
+  '正在生成最终方案...',
+]
 
 export function ItineraryForm() {
   const router = useRouter()
@@ -34,7 +36,45 @@ export function ItineraryForm() {
   const [totalBudget, setTotalBudget] = useState('5000')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [progress, setProgress] = useState<ProgressEvent>({ progress: 0, toolCalls: [] })
+  const [progress, setProgress] = useState(0)
+  const [stageIdx, setStageIdx] = useState(0)
+  const abortRef = useRef<(() => void) | null>(null)
+
+  // Fake progress animation when loading — diminishes over time
+  // so the bar always looks active without needing real backend events.
+  useEffect(() => {
+    if (!loading) return
+
+    setProgress(0)
+    setStageIdx(0)
+
+    const stageTimer = setInterval(() => {
+      setStageIdx(prev => Math.min(prev + 1, PROGRESS_STAGES.length - 1))
+    }, 10000)
+
+    let cancelled = false
+    function tick() {
+      if (cancelled) return
+      setProgress(prev => {
+        if (prev >= 90) return prev
+        // slows down as it approaches 90%
+        return Math.min(prev + (90 - prev) * 0.03 + 0.5, 90)
+      })
+      setTimeout(tick, 600 + Math.random() * 600)
+    }
+    const id = setTimeout(tick, 300)
+
+    return () => {
+      cancelled = true
+      clearInterval(stageTimer)
+      clearTimeout(id)
+    }
+  }, [loading])
+
+  // Cleanup SSE + polling when component unmounts
+  useEffect(() => {
+    return () => abortRef.current?.()
+  }, [])
 
   function addDestination() {
     setDestinations([...destinations, { city_id: 3, city_name: '成都', days: 1 }])
@@ -66,7 +106,8 @@ export function ItineraryForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setProgress({ progress: 0, toolCalls: [] })
+    setProgress(0)
+    setStageIdx(0)
 
     try {
       const res = await generateItinerary({
@@ -81,23 +122,14 @@ export function ItineraryForm() {
 
       const taskId = res.data.task_id
 
-      // Use EventSource SSE streaming instead of polling
+      // SSE stream — only used for completion detection
       const abort = streamGeneration(taskId, {
-        onThought: (data) => {
-          setProgress(prev => ({ ...prev, thought: String(data.content || '') }))
-        },
-        onToolCall: (data) => {
-          setProgress(prev => ({
-            ...prev,
-            toolCalls: [...prev.toolCalls, { name: data.name, input: data.input }],
-          }))
-        },
-        onProgress: (data) => {
-          setProgress(prev => ({ ...prev, progress: data.progress || 0 }))
-        },
         onComplete: (data) => {
-          setLoading(false)
-          router.push(`/itineraries/${data.itinerary_id}`)
+          setProgress(100)
+          setTimeout(() => {
+            setLoading(false)
+            router.push(`/itineraries/${data.itinerary_id}`)
+          }, 400)
         },
         onError: (msg) => {
           setError(msg)
@@ -105,8 +137,7 @@ export function ItineraryForm() {
         },
       })
 
-      // Store abort for cleanup
-      ;(window as unknown as Record<string, unknown>).__abortStream = abort
+      abortRef.current = abort
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败')
       setLoading(false)
@@ -214,44 +245,35 @@ export function ItineraryForm() {
         </div>
       </div>
 
-      {/* Progress Panel */}
+      {/* Progress Panel — fake progress bar to reassure user during generation */}
       {loading && (
         <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-4 space-y-3">
           <div className="flex items-center gap-2 text-blue-700 font-medium">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>AI 正在规划行程...</span>
+            <span>{stageIdx + 1}/{PROGRESS_STAGES.length} {PROGRESS_STAGES[stageIdx]}</span>
           </div>
 
           {/* Progress bar */}
-          <div className="w-full bg-blue-200 rounded-full h-2">
+          <div className="w-full bg-blue-200 rounded-full h-2.5">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${Math.max(5, progress.progress * 100)}%` }}
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${Math.max(3, progress)}%` }}
             />
           </div>
 
-          {/* Current thought */}
-          {progress.thought && (
-            <div className="flex items-start gap-2 text-sm text-blue-600">
-              <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />
-              <span className="italic">{progress.thought}</span>
-            </div>
-          )}
-
-          {/* Tool calls */}
-          {progress.toolCalls.length > 0 && (
-            <div className="space-y-1">
-              {progress.toolCalls.map((tc, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                  <Wrench className="w-3.5 h-3.5 shrink-0" />
-                  <span className="font-medium">{tc.name}</span>
-                  <span className="text-gray-400 truncate">
-                    {typeof tc.input === 'string' ? tc.input : JSON.stringify(tc.input)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Step dots */}
+          <div className="flex items-center justify-between text-xs text-blue-500">
+            {PROGRESS_STAGES.map((stage, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    i <= stageIdx ? 'bg-blue-600' : 'bg-blue-200'
+                  }`}
+                />
+                <span className={i <= stageIdx ? 'font-medium' : ''}>{i + 1}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

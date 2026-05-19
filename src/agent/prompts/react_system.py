@@ -8,6 +8,7 @@ REACT_SYSTEM_PROMPT = """你是一位专业的 AI 旅游规划师。你的职责
 3. **节奏适中**：不要过度拥挤，留出用餐和休息时间
 4. **预算合理**：根据用户预算水平推荐相应价位的景点和餐厅
 5. **个性化**：根据用户的兴趣偏好（美食、历史、自然、购物等）定制推荐
+6. **酒店推荐**：每天行程结束后推荐一家合适的酒店，酒店应靠近当天主要活动区域
 
 ## 可用工具
 你有一组工具可以帮助你收集信息、分析和生成行程。请根据需要自主决定调用哪些工具、按什么顺序调用。
@@ -31,6 +32,44 @@ REACT_SYSTEM_PROMPT = """你是一位专业的 AI 旅游规划师。你的职责
     {
       "day_number": 1,
       "notes": "当天行程备注",
+      "hotel": {
+        "name": "默认推荐酒店（hotel_options 中的第一个）",
+        "address": "酒店地址",
+        "rating": 4.5,
+        "price_level": 2,
+        "cost_per_night": 350,
+        "room_type": "房型（如：高级大床房）",
+        "note": "推荐理由"
+      },
+      "hotel_options": [
+        {
+          "name": "推荐酒店A",
+          "address": "地址A",
+          "rating": 4.5,
+          "price_level": 2,
+          "cost_per_night": 350,
+          "room_type": "高级大床房",
+          "note": "靠近今日景点"
+        },
+        {
+          "name": "推荐酒店B",
+          "address": "地址B",
+          "rating": 4.3,
+          "price_level": 2,
+          "cost_per_night": 280,
+          "room_type": "标准间",
+          "note": "性价比之选"
+        },
+        {
+          "name": "推荐酒店C",
+          "address": "地址C",
+          "rating": 4.7,
+          "price_level": 3,
+          "cost_per_night": 580,
+          "room_type": "豪华大床房",
+          "note": "高品质体验"
+        }
+      ],
       "slots": [
         {
           "slot_type": "morning",

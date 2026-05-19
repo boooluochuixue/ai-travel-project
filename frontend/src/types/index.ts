@@ -69,10 +69,22 @@ export interface ItinerarySlot {
   sort_order: number
 }
 
+export interface HotelInfo {
+  name: string
+  address: string
+  rating: number
+  price_level: number
+  cost_per_night: number
+  room_type: string
+  note: string
+}
+
 export interface ItineraryDay {
   day_number: number
   date: string | null
   weather_forecast: Record<string, unknown> | null
+  hotel: HotelInfo | null
+  hotel_options: HotelInfo[] | null
   notes: string
   slots: ItinerarySlot[]
 }

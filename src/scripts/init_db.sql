@@ -1,6 +1,9 @@
 -- Travel Planner Database Initialization
 -- This script is executed by the MySQL container on first startup
 
+-- Migration for existing databases (run if upgrading):
+-- ALTER TABLE itinerary_days ADD COLUMN hotel JSON DEFAULT NULL COMMENT 'Hotel recommendation: {name, address, rating, price_level, cost_per_night, room_type, note}' AFTER weather_forecast;
+
 CREATE TABLE IF NOT EXISTS users (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
     nickname    VARCHAR(64)     NOT NULL DEFAULT '',
@@ -82,6 +85,8 @@ CREATE TABLE IF NOT EXISTS itinerary_days (
     day_number        INT             NOT NULL COMMENT 'Day number (starting from 1)',
     date              DATE            DEFAULT NULL,
     weather_forecast  JSON            COMMENT 'Weather data',
+    hotel             JSON            DEFAULT NULL COMMENT 'Selected hotel: {name, address, rating, price_level, cost_per_night, room_type, note}',
+    hotel_options     JSON            DEFAULT NULL COMMENT 'Multiple hotel choices: [{name, address, rating, price_level, cost_per_night, room_type, note}, ...]',
     notes             TEXT,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_itinerary (itinerary_id),

@@ -59,6 +59,9 @@ CITIES = [
 # ─── POI Data ───
 POIS = {
     "北京": [
+        {"name": "北京王府井希尔顿酒店", "category": "hotel", "sub_category": "五星级", "address": "北京市东城区王府井东街8号", "latitude": 39.9130, "longitude": 116.4105, "rating": 4.7, "price_level": 3, "opening_hours": "全天", "visit_duration": 1440, "description": "位于王府井核心区，步行可达故宫、天安门，设施豪华服务一流"},
+        {"name": "北京漫心酒店（前门店）", "category": "hotel", "sub_category": "四星级", "address": "北京市东城区前门大街123号", "latitude": 39.8970, "longitude": 116.3970, "rating": 4.5, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "前门商圈，毗邻天安门广场，出行便利，性价比高"},
+        {"name": "北京自如公寓（三里屯店）", "category": "hotel", "sub_category": "精品公寓", "address": "北京市朝阳区三里屯路", "latitude": 39.9330, "longitude": 116.4550, "rating": 4.3, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "三里屯商圈，时尚便捷，适合年轻旅行者"},
         {"name": "故宫博物院", "category": "attraction", "sub_category": "历史建筑", "address": "北京市东城区景山前街4号", "latitude": 39.9163, "longitude": 116.3972, "rating": 4.8, "price_level": 2, "opening_hours": "08:30-17:00(周一闭馆)", "visit_duration": 240, "description": "明清两代的皇家宫殿，世界上最大的宫殿建筑群之一"},
         {"name": "长城（八达岭）", "category": "attraction", "sub_category": "历史建筑", "address": "北京市延庆区G6京藏高速58号出口", "latitude": 40.3543, "longitude": 116.0066, "rating": 4.7, "price_level": 2, "opening_hours": "07:30-16:00", "visit_duration": 240, "description": "世界文化遗产，雄伟壮观的古代军事防御工程"},
         {"name": "颐和园", "category": "attraction", "sub_category": "园林", "address": "北京市海淀区新建宫门路19号", "latitude": 39.9999, "longitude": 116.2755, "rating": 4.7, "price_level": 2, "opening_hours": "06:30-18:00", "visit_duration": 180, "description": "中国现存最大的皇家园林，以昆明湖和万寿山为核心"},
@@ -76,6 +79,9 @@ POIS = {
         {"name": "北京环球影城", "category": "entertainment", "sub_category": "主题公园", "address": "北京市通州区北京环球度假区", "latitude": 39.8458, "longitude": 116.6853, "rating": 4.6, "price_level": 3, "opening_hours": "10:00-19:00", "visit_duration": 480, "description": "世界级主题公园，拥有七大主题景区"},
     ],
     "上海": [
+        {"name": "上海外滩华尔道夫酒店", "category": "hotel", "sub_category": "五星级", "address": "上海市黄浦区中山东一路2号", "latitude": 31.2380, "longitude": 121.4890, "rating": 4.8, "price_level": 3, "opening_hours": "全天", "visit_duration": 1440, "description": "外滩万国建筑群中的奢华酒店，浦江夜景尽收眼底"},
+        {"name": "上海全季酒店（南京路店）", "category": "hotel", "sub_category": "四星级", "address": "上海市黄浦区南京东路88号", "latitude": 31.2370, "longitude": 121.4780, "rating": 4.4, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "南京路步行街旁，位置绝佳，干净舒适"},
+        {"name": "上海M50艺术酒店", "category": "hotel", "sub_category": "精品酒店", "address": "上海市普陀区莫干山路50号", "latitude": 31.2550, "longitude": 121.4400, "rating": 4.2, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "M50创意园内，艺术气息浓厚，适合文艺青年"},
         {"name": "外滩", "category": "attraction", "sub_category": "历史建筑群", "address": "上海市黄浦区中山东一路", "latitude": 31.2400, "longitude": 121.4900, "rating": 4.7, "price_level": 1, "opening_hours": "全天开放", "visit_duration": 90, "description": "上海最具标志性的景观带，汇集万国建筑博览群"},
         {"name": "东方明珠塔", "category": "attraction", "sub_category": "观景台", "address": "上海市浦东新区世纪大道1号", "latitude": 31.2397, "longitude": 121.4998, "rating": 4.5, "price_level": 3, "opening_hours": "09:00-21:00", "visit_duration": 120, "description": "上海地标建筑，高468米，可俯瞰浦江两岸"},
         {"name": "上海迪士尼乐园", "category": "attraction", "sub_category": "主题公园", "address": "上海市浦东新区上海迪士尼度假区", "latitude": 31.1440, "longitude": 121.6570, "rating": 4.7, "price_level": 3, "opening_hours": "08:30-20:30", "visit_duration": 480, "description": "中国大陆首座迪士尼主题乐园"},
@@ -93,6 +99,9 @@ POIS = {
         {"name": "M50创意园", "category": "entertainment", "sub_category": "艺术区", "address": "上海市普陀区莫干山路50号", "latitude": 31.2552, "longitude": 121.4392, "rating": 4.2, "price_level": 1, "opening_hours": "09:00-17:00", "visit_duration": 90, "description": "上海最具影响力的当代艺术园区之一"},
     ],
     "成都": [
+        {"name": "成都博舍酒店", "category": "hotel", "sub_category": "五星级", "address": "成都市锦江区笔帖式街81号", "latitude": 30.6550, "longitude": 104.0820, "rating": 4.7, "price_level": 3, "opening_hours": "全天", "visit_duration": 1440, "description": "远洋太古里内的奢华设计酒店，融合川西传统与现代风格"},
+        {"name": "成都春熙路亚朵酒店", "category": "hotel", "sub_category": "四星级", "address": "成都市锦江区春熙路118号", "latitude": 30.6580, "longitude": 104.0810, "rating": 4.5, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "春熙路商圈中心，阅读人文主题，出行便利"},
+        {"name": "成都宽窄巷子民宿", "category": "hotel", "sub_category": "精品民宿", "address": "成都市青羊区宽窄巷子片区", "latitude": 30.6710, "longitude": 104.0540, "rating": 4.4, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "宽窄巷子内的川西院落民宿，体验老成都生活"},
         {"name": "成都大熊猫繁育研究基地", "category": "attraction", "sub_category": "动物园", "address": "成都市成华区熊猫大道1375号", "latitude": 30.7351, "longitude": 104.1438, "rating": 4.7, "price_level": 2, "opening_hours": "07:30-17:00", "visit_duration": 210, "description": "世界著名的大熊猫保护研究中心，可近距离观察熊猫"},
         {"name": "都江堰", "category": "attraction", "sub_category": "水利工程", "address": "成都市都江堰市公园路", "latitude": 31.0087, "longitude": 103.6201, "rating": 4.7, "price_level": 2, "opening_hours": "08:00-17:30", "visit_duration": 180, "description": "两千多年前修建的世界级水利工程，至今仍在发挥灌溉作用"},
         {"name": "青城山", "category": "attraction", "sub_category": "自然风景区", "address": "成都市都江堰市青城山镇", "latitude": 30.8976, "longitude": 103.5663, "rating": 4.6, "price_level": 2, "opening_hours": "08:00-17:00", "visit_duration": 300, "description": "道教名山，青城天下幽，是道教发源地之一"},
@@ -110,6 +119,9 @@ POIS = {
         {"name": "西岭雪山", "category": "attraction", "sub_category": "自然风景区", "address": "成都市大邑县西岭镇", "latitude": 30.6119, "longitude": 103.2485, "rating": 4.4, "price_level": 3, "opening_hours": "09:00-17:00", "visit_duration": 360, "description": "成都第一高峰，冬季滑雪胜地，夏季避暑天堂"},
     ],
     "西安": [
+        {"name": "西安索菲特传奇酒店", "category": "hotel", "sub_category": "五星级", "address": "西安市新城区东新街319号", "latitude": 34.2620, "longitude": 108.9590, "rating": 4.7, "price_level": 3, "opening_hours": "全天", "visit_duration": 1440, "description": "人民大厦内的法式奢华酒店，毗邻永兴坊和明城墙"},
+        {"name": "西安回民街精品客栈", "category": "hotel", "sub_category": "精品客栈", "address": "西安市莲湖区北院门街道", "latitude": 34.2640, "longitude": 108.9400, "rating": 4.3, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "回民街内的特色客栈，美食触手可及"},
+        {"name": "西安大唐不夜城亚朵酒店", "category": "hotel", "sub_category": "四星级", "address": "西安市雁塔区慈恩路66号", "latitude": 34.2190, "longitude": 108.9620, "rating": 4.5, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "大雁塔脚下，大唐不夜城旁，夜游极佳"},
         {"name": "秦始皇兵马俑博物馆", "category": "attraction", "sub_category": "博物馆", "address": "西安市临潼区秦陵北路", "latitude": 34.3838, "longitude": 109.2757, "rating": 4.7, "price_level": 3, "opening_hours": "08:30-17:00", "visit_duration": 180, "description": "世界第八大奇迹，秦始皇陵的陪葬坑，规模宏大震撼人心"},
         {"name": "西安城墙", "category": "attraction", "sub_category": "历史建筑", "address": "西安市碑林区南大街2号", "latitude": 34.2591, "longitude": 108.9436, "rating": 4.6, "price_level": 2, "opening_hours": "08:00-22:00", "visit_duration": 120, "description": "中国现存规模最大、保存最完整的古代城垣，可骑行游览"},
         {"name": "大雁塔", "category": "attraction", "sub_category": "古塔", "address": "西安市雁塔区慈恩路1号", "latitude": 34.2198, "longitude": 108.9614, "rating": 4.5, "price_level": 2, "opening_hours": "08:00-18:00", "visit_duration": 90, "description": "唐代高僧玄奘为藏经而建，西安的标志性建筑"},
@@ -127,6 +139,9 @@ POIS = {
         {"name": "永兴坊", "category": "shopping", "sub_category": "特色街区", "address": "西安市新城区东新街", "latitude": 34.2622, "longitude": 108.9580, "rating": 4.3, "price_level": 1, "opening_hours": "全天开放", "visit_duration": 90, "description": "陕西非遗美食文化街区，摔碗酒的发源地"},
     ],
     "大理": [
+        {"name": "大理洱海英迪格酒店", "category": "hotel", "sub_category": "五星级", "address": "大理白族自治州大理市滨海大道", "latitude": 25.6500, "longitude": 100.2210, "rating": 4.7, "price_level": 3, "opening_hours": "全天", "visit_duration": 1440, "description": "洱海湖畔的度假酒店，坐拥苍山洱海绝美风光"},
+        {"name": "大理古城听花堂民宿", "category": "hotel", "sub_category": "精品民宿", "address": "大理白族自治州大理古城人民路", "latitude": 25.6770, "longitude": 100.1580, "rating": 4.5, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "古城内的花园民宿，闹中取静，文艺气息浓厚"},
+        {"name": "大理双廊海景客栈", "category": "hotel", "sub_category": "海景客栈", "address": "大理白族自治州大理市双廊镇", "latitude": 25.9500, "longitude": 100.1200, "rating": 4.4, "price_level": 2, "opening_hours": "全天", "visit_duration": 1440, "description": "双廊古镇海景房，在房间即可欣赏洱海日出"},
         {"name": "洱海", "category": "attraction", "sub_category": "自然风光", "address": "大理白族自治州大理市洱海", "latitude": 25.6916, "longitude": 100.1582, "rating": 4.7, "price_level": 1, "opening_hours": "全天开放", "visit_duration": 180, "description": "云南第二大淡水湖，风花雪月四景之'洱海月'所在地"},
         {"name": "大理古城", "category": "attraction", "sub_category": "古城", "address": "大理白族自治州大理市古城区", "latitude": 25.6779, "longitude": 100.1580, "rating": 4.4, "price_level": 1, "opening_hours": "全天开放", "visit_duration": 180, "description": "南诏国和大理国的都城，保留了大量白族传统建筑"},
         {"name": "苍山", "category": "attraction", "sub_category": "自然风景区", "address": "大理白族自治州大理市苍山", "latitude": 25.6570, "longitude": 100.0980, "rating": 4.6, "price_level": 3, "opening_hours": "08:30-16:00", "visit_duration": 240, "description": '大理"风花雪月"四景之"苍山雪"，乘坐索道可俯瞰洱海'},
