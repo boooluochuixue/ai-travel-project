@@ -101,9 +101,20 @@ export function streamGeneration(
     onError?: (error: string) => void
   },
 ): () => void {
+  let finished = false
+  let reconnectAttempts = 0
+  const MAX_RECONNECT_ATTEMPTS = 5
+
+  function finish() {
+    finished = true
+    es.close()
+    clearInterval(pollTimer)
+  }
+
   const es = new EventSource(`/api/v1/itineraries/generate/stream/${taskId}`)
 
   es.onmessage = (event) => {
+    if (finished) return
     try {
       const msg = JSON.parse(event.data)
       switch (msg.type) {
@@ -121,22 +132,52 @@ export function streamGeneration(
           break
         case 'complete':
           callbacks.onComplete?.(msg.data as { itinerary_id: number })
-          es.close()
+          finish()
           break
         case 'error':
           callbacks.onError?.(String(msg.data?.message || '未知错误'))
-          es.close()
+          finish()
           break
       }
     } catch { /* ignore parse errors */ }
   }
 
+  // EventSource auto-reconnects on connection loss.
+  // Only give up after MAX_RECONNECT_ATTEMPTS consecutive errors.
   es.onerror = () => {
-    callbacks.onError?.('连接断开')
-    es.close()
+    reconnectAttempts++
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS && !finished) {
+      finished = true
+      callbacks.onError?.('连接断开，请刷新页面重试')
+      es.close()
+      clearInterval(pollTimer)
+    }
   }
 
-  return () => es.close()
+  // Polling fallback: check Redis task status periodically
+  // in case SSE never delivers the terminal event.
+  const pollTimer = setInterval(async () => {
+    if (finished) return
+    try {
+      const res = await fetch(`/api/v1/itineraries/generate/${taskId}/status`)
+      const body = await res.json()
+      const task = body.data
+      if (!task) return
+      if (task.status === 'completed' && task.itinerary_id) {
+        callbacks.onComplete?.({ itinerary_id: task.itinerary_id })
+        finish()
+      } else if (task.status === 'failed') {
+        callbacks.onError?.(task.error || '生成失败')
+        finish()
+      }
+    } catch { /* polling error, try again next interval */ }
+  }, 3000)
+
+  return () => {
+    finished = true
+    es.close()
+    clearInterval(pollTimer)
+  }
 }
 
 export async function confirmItinerary(id: number): Promise<ApiResponse<null>> {

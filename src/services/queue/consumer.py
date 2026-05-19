@@ -94,19 +94,32 @@ async def handle_generation(payload: dict) -> None:
             "error": None,
         }
 
-        # Stream events to SSE
+        # Stream events to SSE with step progress
         final_output = {}
         seen_events = set()
+        step = 0
+        STEPS = [
+            "分析旅行需求",
+            "搜索景点信息",
+            "规划行程安排",
+            "推荐住宿酒店",
+            "生成最终方案",
+        ]
         async for event in agent.astream_events(initial_state, version="v2"):
             kind = event["event"]
             event_name = event.get("name", "")
             seen_events.add(kind)
 
             if kind == "on_chat_model_start":
-                await publish_event(task_id, "thought", {"content": "AI 正在思考下一步..."})
-
-            elif kind == "on_chat_model_end":
-                await publish_event(task_id, "progress", {"progress": 0.5, "current_stage": "reasoning"})
+                step = min(step + 1, len(STEPS))
+                stage = STEPS[step - 1] if step > 0 else ""
+                await publish_event(task_id, "progress", {
+                    "progress": step / len(STEPS),
+                    "step": step,
+                    "total_steps": len(STEPS),
+                    "current_stage": f"{stage}中",
+                })
+                await publish_event(task_id, "thought", {"content": f"{stage}中..."})
 
             elif kind == "on_tool_start":
                 tool_input = event["data"].get("input", {})
@@ -133,7 +146,7 @@ async def handle_generation(payload: dict) -> None:
         logger.info(f"Final output keys: {list(final_output.keys()) if final_output else 'empty'}")
 
         # Publish progress
-        await publish_event(task_id, "progress", {"progress": 0.8, "current_stage": "saving"})
+        await publish_event(task_id, "progress", {"progress": 1.0, "step": len(STEPS), "total_steps": len(STEPS), "current_stage": "保存方案中"})
 
         itinerary_id = await save_itinerary(final_output, user_id)
         logger.info(f"Itinerary saved: id={itinerary_id}")
@@ -299,6 +312,8 @@ async def save_itinerary(output: dict, user_id: int = None) -> int:
             day = ItineraryDay(
                 itinerary_id=itinerary.id,
                 day_number=day_data.get("day_number", 1),
+                hotel=day_data.get("hotel"),
+                hotel_options=day_data.get("hotel_options"),
                 notes=day_data.get("notes", ""),
             )
             session.add(day)

@@ -214,6 +214,35 @@ async def confirm_itinerary(
     return {"code": 0, "message": "行程已确认"}
 
 
+@router.post("/{itinerary_id}/days/{day_number}/select-hotel")
+async def select_hotel(
+    itinerary_id: int,
+    day_number: int,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Select a hotel from options for a specific day."""
+    hotel = body.get("hotel")
+    if not hotel or not isinstance(hotel, dict) or not hotel.get("name"):
+        return {"code": 40000, "message": "请提供有效的酒店信息", "data": None}
+
+    result = await db.execute(
+        select(ItineraryDay)
+        .where(
+            ItineraryDay.itinerary_id == itinerary_id,
+            ItineraryDay.day_number == day_number,
+        )
+    )
+    day = result.scalar_one_or_none()
+    if not day:
+        return {"code": 40400, "message": "该天行程不存在", "data": None}
+
+    day.hotel = hotel
+    await db.commit()
+
+    return {"code": 0, "message": "酒店已选择", "data": hotel}
+
+
 @router.delete("/{itinerary_id}")
 async def delete_itinerary(
     itinerary_id: int,
@@ -289,6 +318,8 @@ def _itinerary_detail(it: Itinerary) -> dict:
                 "day_number": d.day_number,
                 "date": str(d.date) if d.date else None,
                 "weather_forecast": d.weather_forecast,
+                "hotel": d.hotel,
+                "hotel_options": d.hotel_options,
                 "notes": d.notes or "",
                 "slots": [
                     {

@@ -134,6 +134,12 @@ class ItineraryDay(Base):
     weather_forecast: Mapped[Optional[dict]] = mapped_column(
         JSON, nullable=True, comment='{weather, temp_min, temp_max}'
     )
+    hotel: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, comment='Selected hotel: {name, address, rating, price_level, cost_per_night, room_type, note}'
+    )
+    hotel_options: Mapped[Optional[list]] = mapped_column(
+        JSON, nullable=True, comment='[{name, address, rating, price_level, cost_per_night, room_type, note}, ...]'
+    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

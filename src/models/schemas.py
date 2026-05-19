@@ -54,10 +54,24 @@ class ItinerarySlotResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class HotelInfo(BaseModel):
+    name: str = ""
+    address: str = ""
+    rating: float = 0
+    price_level: int = 1
+    cost_per_night: float = 0
+    room_type: str = ""
+    note: str = ""
+
+    model_config = {"from_attributes": True}
+
+
 class ItineraryDayResponse(BaseModel):
     day_number: int
     date: Optional[date] = None
     weather_forecast: Optional[dict] = None
+    hotel: Optional[HotelInfo] = None
+    hotel_options: Optional[list[HotelInfo]] = None
     notes: str = ""
     slots: list[ItinerarySlotResponse] = Field(default_factory=list)
 

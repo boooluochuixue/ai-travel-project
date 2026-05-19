@@ -155,6 +155,7 @@ travel-planner/
 | `tools/weather_tools.py` | 天气查询工具 |
 | `tools/budget_tools.py` | 预算计算工具 |
 | `tools/schedule_tools.py` | 排程验证工具 |
+| `tools/hotel_tools.py` | 酒店推荐工具 (根据城市、预算推荐) |
 | `prompts/planner.py` | Planner 节点提示词 |
 | `prompts/detailer.py` | Detail 节点提示词 |
 | `prompts/optimizer.py` | Optimize 节点提示词 |
@@ -234,6 +235,7 @@ travel-planner/
             │ day_number                          │
             │ date                                │
             │ weather_forecast (JSON)             │
+            │ hotel (JSON)                        │
             │ notes                               │
             │ created_at                          │
             └─────────────────────────────────────┘
@@ -373,6 +375,8 @@ CREATE TABLE itinerary_days (
     day_number        INT             NOT NULL COMMENT '第几天(从1开始)',
     date              DATE            DEFAULT NULL,
     weather_forecast  JSON            COMMENT '{weather, temp_min, temp_max, humidity}',
+    hotel             JSON            DEFAULT NULL COMMENT '已选酒店: {name, address, rating, price_level, cost_per_night, room_type, note}',
+    hotel_options     JSON            DEFAULT NULL COMMENT '可选酒店列表: [{name, address, rating, price_level, cost_per_night, room_type, note}, ...]',
     notes             TEXT,
     created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_itinerary (itinerary_id),
@@ -467,9 +471,19 @@ class ItinerarySlotCreate(BaseModel):
     note: str = ""
     sort_order: int = 0
 
+class HotelInfo(BaseModel):
+    name: str = ""
+    address: str = ""
+    rating: float = 0
+    price_level: int = 1
+    cost_per_night: float = 0
+    room_type: str = ""
+    note: str = ""
+
 class ItineraryDayCreate(BaseModel):
     day_number: int
     date: Optional[date] = None
+    hotel: Optional[dict] = None
     notes: str = ""
     slots: list[ItinerarySlotCreate] = Field(default_factory=list)
 

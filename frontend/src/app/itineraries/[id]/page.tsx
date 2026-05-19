@@ -141,7 +141,7 @@ export default function ItineraryDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       {/* Timeline */}
-      <ItineraryTimeline days={itinerary.days} />
+      <ItineraryTimeline days={itinerary.days} itineraryId={itinerary.id} disabled={itinerary.status !== 'draft'} />
     </div>
   )
 }
