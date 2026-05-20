@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { generateItinerary, streamGeneration } from '@/lib/api'
 import DateSelectModal from './DateSelectModal'
 import CitySelectModal from './CitySelectModal'
 
@@ -31,14 +30,6 @@ const SPECIAL_NEEDS = [
   { id: '早点回酒店', icon: null },
 ]
 
-const PROGRESS_STAGES = [
-  'AI 正在分析旅行需求...',
-  '正在搜索景点信息...',
-  '正在规划行程安排...',
-  '正在推荐住宿酒店...',
-  '正在生成最终方案...',
-]
-
 export default function PlanCreatePage() {
   const router = useRouter()
 
@@ -64,137 +55,35 @@ export default function PlanCreatePage() {
   const [showDepCitySelect, setShowDepCitySelect] = useState(false)
   const [showDestCitySelect, setShowDestCitySelect] = useState(false)
 
-  // Generation
-  const [loading, setLoading] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [stageIdx, setStageIdx] = useState(0)
-  const [error, setError] = useState('')
-  const abortRef = useRef<(() => void) | null>(null)
-
-  useEffect(() => {
-    return () => abortRef.current?.()
-  }, [])
-
-  // Fake progress
-  useEffect(() => {
-    if (!loading) return
-    setProgress(0)
-    setStageIdx(0)
-
-    const stageTimer = setInterval(() => {
-      setStageIdx(prev => Math.min(prev + 1, PROGRESS_STAGES.length - 1))
-    }, 8000)
-
-    let cancelled = false
-    function tick() {
-      if (cancelled) return
-      setProgress(prev => {
-        if (prev >= 90) return prev
-        return Math.min(prev + (90 - prev) * 0.03 + 0.5, 90)
-      })
-      setTimeout(tick, 600 + Math.random() * 600)
-    }
-    const id = setTimeout(tick, 300)
-
-    return () => {
-      cancelled = true
-      clearInterval(stageTimer)
-      clearTimeout(id)
-    }
-  }, [loading])
-
   function toggleNeed(id: string) {
     setSelectedNeeds(prev =>
       prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id],
     )
   }
 
-  function getPaceValue(): string {
-    return PACE_OPTIONS.find(p => p.id === pace)?.value || 'normal'
-  }
+  function handleSubmit() {
+    const params = new URLSearchParams({
+      departureCity: departureCity.name,
+      departureId: String(departureCity.id),
+      destCity: destCity.name,
+      destId: String(destCity.id),
+      days: String(totalDays || 1),
+      adults: String(adults),
+      children: String(children),
+      elders: String(elders),
+      pace: pace,
+      budget: budget,
+      notes: notes,
+    })
+    if (startDate) params.set('startDate', startDate)
+    if (selectedNeeds.length) params.set('interests', selectedNeeds.join(','))
 
-  function getBudgetValue(): string {
-    return BUDGET_OPTIONS.find(b => b.id === budget)?.value || 'moderate'
-  }
-
-  async function handleSubmit() {
-    setLoading(true)
-    setError('')
-
-    const days = totalDays || 1
-    const destCityId = destCity.id
-
-    try {
-      const res = await generateItinerary({
-        destinations: [{ city_id: destCityId, city_name: destCity.name, days }],
-        departure_city: departureCity.name,
-        departure_city_id: departureCity.id,
-        travelers: { adults, children, elders },
-        special_needs: selectedNeeds,
-        notes,
-        preferences: {
-          interests: selectedNeeds,
-          budget_level: getBudgetValue() as 'economy' | 'moderate' | 'luxury',
-          pace: getPaceValue() as 'relaxed' | 'normal' | 'intensive',
-        },
-      })
-
-      const taskId = res.data.task_id
-
-      const abort = streamGeneration(taskId, {
-        onComplete: (data) => {
-          setProgress(100)
-          setTimeout(() => {
-            setLoading(false)
-            router.push(`/itineraries/${data.itinerary_id}`)
-          }, 400)
-        },
-        onError: (msg) => {
-          setError(msg)
-          setLoading(false)
-        },
-      })
-
-      abortRef.current = abort
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '生成失败')
-      setLoading(false)
-    }
+    router.push(`/plan/confirm-route?${params.toString()}`)
   }
 
   const formatDateLabel = startDate
     ? `${new Date(startDate).getMonth() + 1}月${new Date(startDate).getDate()}日 - ${new Date(new Date(startDate).getTime() + (totalDays - 1) * 86400000).getMonth() + 1}月${new Date(new Date(startDate).getTime() + (totalDays - 1) * 86400000).getDate()}日`
     : ''
-
-  // Loading overlay
-  if (loading) {
-    return (
-      <div className="w-full min-h-full bg-gradient-to-b from-[#EBF2FF] to-[#F5F6F8] flex flex-col items-center justify-center px-[32px]">
-        <div className="w-full max-w-sm mx-auto text-center">
-          <div className="w-[64px] h-[64px] rounded-full bg-white shadow-[0_4px_16px_rgba(44,104,255,0.15)] flex items-center justify-center mx-auto mb-[24px]">
-            <i className="fas fa-magic text-[#2C68FF] text-[28px] animate-pulse"></i>
-          </div>
-          <div className="text-[17px] font-bold text-[#333] mb-[8px]">AI 正在为你规划行程</div>
-          <div className="text-[13px] text-[#999] mb-[24px]">{stageIdx + 1}/{PROGRESS_STAGES.length} {PROGRESS_STAGES[stageIdx]}</div>
-
-          <div className="w-full bg-white/60 rounded-full h-[6px] mb-[16px]">
-            <div className="bg-[#2C68FF] h-[6px] rounded-full transition-all duration-500 ease-out" style={{ width: `${Math.max(3, progress)}%` }}></div>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-[#999] max-w-[280px] mx-auto">
-            {PROGRESS_STAGES.map((_, i) => (
-              <div key={i} className={`w-[8px] h-[8px] rounded-full ${i <= stageIdx ? 'bg-[#2C68FF]' : 'bg-[#D0D8E8]'}`}></div>
-            ))}
-          </div>
-
-          <div className="mt-[32px] text-[12px] text-[#999]">
-            <i className="fas fa-spinner fa-spin mr-[4px]"></i>
-            请耐心等待，通常需要 1-2 分钟
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="w-full min-h-full bg-[#F5F7FA] flex flex-col pb-[80px]">
@@ -405,13 +294,6 @@ export default function PlanCreatePage() {
               <div className="absolute bottom-[8px] right-[12px] text-[11px] text-[#CCC]">{notes.length}/60</div>
             </div>
           </div>
-
-          {error && (
-            <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-              <i className="fas fa-exclamation-circle text-red-500"></i>
-              {error}
-            </div>
-          )}
         </div>
       </div>
 

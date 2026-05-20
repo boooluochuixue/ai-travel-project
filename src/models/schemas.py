@@ -37,6 +37,7 @@ class ItineraryGenerateRequest(BaseModel):
     departure_city_id: Optional[int] = None
     travelers: Travelers = Field(default_factory=Travelers)
     special_needs: list[str] = Field(default_factory=list)
+    selected_poi_ids: list[int] = Field(default_factory=list)
     notes: str = Field(default="", max_length=200)
     preferences: Preference = Field(default_factory=Preference)
     total_budget: Optional[float] = Field(default=None, gt=0)
