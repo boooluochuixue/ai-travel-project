@@ -308,12 +308,6 @@ export default function PlanCreatePage() {
               </div>
             </div>
 
-            {error && (
-              <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-                <i className="fas fa-exclamation-circle text-red-500"></i>
-                {error}
-              </div>
-            )}
           </div>
           </div>
 
