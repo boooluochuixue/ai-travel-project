@@ -23,10 +23,21 @@ class Preference(BaseModel):
 
 # ─── Request ───
 
+class Travelers(BaseModel):
+    adults: int = Field(default=2, ge=0, le=20)
+    children: int = Field(default=0, ge=0, le=20)
+    elders: int = Field(default=0, ge=0, le=20)
+
+
 class ItineraryGenerateRequest(BaseModel):
     user_id: Optional[int] = None
     destinations: list[Destination] = Field(min_length=1, max_length=5)
     start_date: Optional[date] = None
+    departure_city: str = Field(default="", max_length=64)
+    departure_city_id: Optional[int] = None
+    travelers: Travelers = Field(default_factory=Travelers)
+    special_needs: list[str] = Field(default_factory=list)
+    notes: str = Field(default="", max_length=200)
     preferences: Preference = Field(default_factory=Preference)
     total_budget: Optional[float] = Field(default=None, gt=0)
 

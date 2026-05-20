@@ -54,6 +54,12 @@ export interface Preference {
   pace: 'relaxed' | 'normal' | 'intensive'
 }
 
+export interface Travelers {
+  adults: number
+  children: number
+  elders: number
+}
+
 export interface ItinerarySlot {
   slot_type: 'morning' | 'afternoon' | 'evening'
   poi_id: number | null

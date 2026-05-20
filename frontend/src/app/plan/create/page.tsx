@@ -1,37 +1,491 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Compass } from 'lucide-react'
-import { ItineraryForm } from '@/components/ItineraryForm'
+
+import { generateItinerary, streamGeneration } from '@/lib/api'
+import DateSelectModal from './DateSelectModal'
+import CitySelectModal from './CitySelectModal'
+
+const PACE_OPTIONS = [
+  { id: '轻松', icon: 'fa-coffee', iconColor: '#53B782', desc1: '每天1-2个地点', desc2: '预留充足休息', value: 'relaxed' },
+  { id: '适中', icon: 'fa-walking', iconColor: '#2C68FF', desc1: '每天2-3个地点', desc2: '兼顾游玩与休息', value: 'normal' },
+  { id: '充实', icon: 'fa-camera', iconColor: '#F5A623', desc1: '每天3-4个地点', desc2: '多玩一些', value: 'intensive' },
+  { id: '高强度', icon: 'fa-bolt', iconColor: '#F85A5A', desc1: '尽量多打卡', desc2: '早出晚归', value: 'intensive' },
+] as const
+
+const BUDGET_OPTIONS = [
+  { id: '经济省心', desc: '性价比优先', value: 'economy' },
+  { id: '舒适适中', desc: '体验与价格平衡', value: 'moderate' },
+  { id: '品质优先', desc: '更重视体验', value: 'luxury' },
+  { id: '自定义预算', desc: '我有明确预算', value: 'custom' },
+] as const
+
+const SPECIAL_NEEDS = [
+  { id: '少走路', icon: 'fa-star' },
+  { id: '不早起', icon: 'fa-star' },
+  { id: '无障碍设施', icon: 'fa-wheelchair' },
+  { id: '避开人多', icon: null },
+  { id: '住地附近', icon: null },
+  { id: '不吃辣', icon: null },
+  { id: '早点回酒店', icon: null },
+]
+
+const PROGRESS_STAGES = [
+  'AI 正在分析旅行需求...',
+  '正在搜索景点信息...',
+  '正在规划行程安排...',
+  '正在推荐住宿酒店...',
+  '正在生成最终方案...',
+]
 
 export default function PlanCreatePage() {
   const router = useRouter()
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Back button */}
-      <button
-        onClick={() => router.push('/')}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 cursor-pointer"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        返回首页
-      </button>
+  // City & date
+  const [departureCity, setDepartureCity] = useState({ id: 1, name: '北京' })
+  const [destCity, setDestCity] = useState({ id: 3, name: '成都' })
+  const [startDate, setStartDate] = useState<string>('')
+  const [totalDays, setTotalDays] = useState(3)
 
-      {/* Hero */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100 mb-4">
-          <Compass className="w-8 h-8 text-blue-600" />
+  // Travelers
+  const [adults, setAdults] = useState(2)
+  const [children, setChildren] = useState(0)
+  const [elders, setElders] = useState(0)
+
+  // Preferences
+  const [pace, setPace] = useState('适中')
+  const [budget, setBudget] = useState('舒适适中')
+  const [selectedNeeds, setSelectedNeeds] = useState<string[]>([])
+  const [notes, setNotes] = useState('')
+
+  // Modals
+  const [showDateSelect, setShowDateSelect] = useState(false)
+  const [showDepCitySelect, setShowDepCitySelect] = useState(false)
+  const [showDestCitySelect, setShowDestCitySelect] = useState(false)
+
+  // Generation
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [stageIdx, setStageIdx] = useState(0)
+  const [error, setError] = useState('')
+  const abortRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    return () => abortRef.current?.()
+  }, [])
+
+  // Fake progress
+  useEffect(() => {
+    if (!loading) return
+    setProgress(0)
+    setStageIdx(0)
+
+    const stageTimer = setInterval(() => {
+      setStageIdx(prev => Math.min(prev + 1, PROGRESS_STAGES.length - 1))
+    }, 8000)
+
+    let cancelled = false
+    function tick() {
+      if (cancelled) return
+      setProgress(prev => {
+        if (prev >= 90) return prev
+        return Math.min(prev + (90 - prev) * 0.03 + 0.5, 90)
+      })
+      setTimeout(tick, 600 + Math.random() * 600)
+    }
+    const id = setTimeout(tick, 300)
+
+    return () => {
+      cancelled = true
+      clearInterval(stageTimer)
+      clearTimeout(id)
+    }
+  }, [loading])
+
+  function toggleNeed(id: string) {
+    setSelectedNeeds(prev =>
+      prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id],
+    )
+  }
+
+  function getPaceValue(): string {
+    return PACE_OPTIONS.find(p => p.id === pace)?.value || 'normal'
+  }
+
+  function getBudgetValue(): string {
+    return BUDGET_OPTIONS.find(b => b.id === budget)?.value || 'moderate'
+  }
+
+  async function handleSubmit() {
+    setLoading(true)
+    setError('')
+
+    const days = totalDays || 1
+    const destCityId = destCity.id
+
+    try {
+      const res = await generateItinerary({
+        destinations: [{ city_id: destCityId, city_name: destCity.name, days }],
+        departure_city: departureCity.name,
+        departure_city_id: departureCity.id,
+        travelers: { adults, children, elders },
+        special_needs: selectedNeeds,
+        notes,
+        preferences: {
+          interests: selectedNeeds,
+          budget_level: getBudgetValue() as 'economy' | 'moderate' | 'luxury',
+          pace: getPaceValue() as 'relaxed' | 'normal' | 'intensive',
+        },
+      })
+
+      const taskId = res.data.task_id
+
+      const abort = streamGeneration(taskId, {
+        onComplete: (data) => {
+          setProgress(100)
+          setTimeout(() => {
+            setLoading(false)
+            router.push(`/itineraries/${data.itinerary_id}`)
+          }, 400)
+        },
+        onError: (msg) => {
+          setError(msg)
+          setLoading(false)
+        },
+      })
+
+      abortRef.current = abort
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成失败')
+      setLoading(false)
+    }
+  }
+
+  const formatDateLabel = startDate
+    ? `${new Date(startDate).getMonth() + 1}月${new Date(startDate).getDate()}日 - ${new Date(new Date(startDate).getTime() + (totalDays - 1) * 86400000).getMonth() + 1}月${new Date(new Date(startDate).getTime() + (totalDays - 1) * 86400000).getDate()}日`
+    : ''
+
+  // Loading overlay
+  if (loading) {
+    return (
+      <div className="w-full min-h-full bg-gradient-to-b from-[#EBF2FF] to-[#F5F6F8] flex flex-col items-center justify-center px-[32px]">
+        <div className="w-full max-w-sm mx-auto text-center">
+          <div className="w-[64px] h-[64px] rounded-full bg-white shadow-[0_4px_16px_rgba(44,104,255,0.15)] flex items-center justify-center mx-auto mb-[24px]">
+            <i className="fas fa-magic text-[#2C68FF] text-[28px] animate-pulse"></i>
+          </div>
+          <div className="text-[17px] font-bold text-[#333] mb-[8px]">AI 正在为你规划行程</div>
+          <div className="text-[13px] text-[#999] mb-[24px]">{stageIdx + 1}/{PROGRESS_STAGES.length} {PROGRESS_STAGES[stageIdx]}</div>
+
+          <div className="w-full bg-white/60 rounded-full h-[6px] mb-[16px]">
+            <div className="bg-[#2C68FF] h-[6px] rounded-full transition-all duration-500 ease-out" style={{ width: `${Math.max(3, progress)}%` }}></div>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-[#999] max-w-[280px] mx-auto">
+            {PROGRESS_STAGES.map((_, i) => (
+              <div key={i} className={`w-[8px] h-[8px] rounded-full ${i <= stageIdx ? 'bg-[#2C68FF]' : 'bg-[#D0D8E8]'}`}></div>
+            ))}
+          </div>
+
+          <div className="mt-[32px] text-[12px] text-[#999]">
+            <i className="fas fa-spinner fa-spin mr-[4px]"></i>
+            请耐心等待，通常需要 1-2 分钟
+          </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">AI 旅行规划</h1>
-        <p className="text-gray-500 max-w-md mx-auto">
-          告诉我想去哪里，AI 自动为你生成完美的行程安排
-        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full min-h-full bg-[#F5F7FA] flex flex-col pb-[80px]">
+      <div className="max-w-3xl mx-auto w-full">
+        {/* Top nav */}
+        <div className="flex flex-col items-center pt-[44px] pb-[16px] px-[20px] shrink-0 bg-[#F5F7FA]">
+          <div className="w-full flex items-center justify-between mb-[8px]">
+            <button onClick={() => router.push('/')} className="w-[32px] h-[32px] flex items-center cursor-pointer">
+              <i className="fas fa-chevron-left text-[#333] text-[20px]"></i>
+            </button>
+            <div className="text-[18px] font-bold text-[#333]">确认旅行需求</div>
+            <div className="w-[32px]"></div>
+          </div>
+          <div className="text-[13px] text-[#666]">先确认几个关键信息，我来帮你生成更合适的方案</div>
+        </div>
+
+        {/* Content */}
+        <div className="px-[20px] pb-[20px] space-y-[12px]">
+          {/* Basic info card */}
+          <div className="bg-white rounded-[16px] p-[10px] shadow-sm flex flex-col space-y-[6px]">
+            {/* Departure city */}
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowDepCitySelect(true)}>
+              <div className="flex items-center">
+                <div className="w-[24px] h-[24px] bg-[#F0F5FF] rounded-full flex items-center justify-center mr-[10px]">
+                  <i className="fas fa-location-arrow text-[#2C68FF] text-[12px]"></i>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[12px] text-[#333] font-bold mb-[1px]">出发地</span>
+                  <span className="text-[12px] text-[#666]">{departureCity.name}</span>
+                </div>
+              </div>
+              <i className="fas fa-angle-right text-[#CCC] text-[16px]"></i>
+            </div>
+
+            <div className="w-full h-[1px] bg-[#F5F5F5] ml-[34px]"></div>
+
+            {/* Destination */}
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowDestCitySelect(true)}>
+              <div className="flex items-center">
+                <div className="w-[24px] h-[24px] bg-[#F0F5FF] rounded-full flex items-center justify-center mr-[10px]">
+                  <i className="fas fa-map-marker-alt text-[#2C68FF] text-[12px]"></i>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[12px] text-[#333] font-bold mb-[1px]">目的地城市</span>
+                  <span className="text-[12px] text-[#666]">{destCity.name}</span>
+                </div>
+              </div>
+              <i className="fas fa-angle-right text-[#CCC] text-[16px]"></i>
+            </div>
+
+            <div className="w-full h-[1px] bg-[#F5F5F5] ml-[34px]"></div>
+
+            {/* Date */}
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowDateSelect(true)}>
+              <div className="flex items-center">
+                <div className="w-[24px] h-[24px] bg-[#F0F5FF] rounded-full flex items-center justify-center mr-[10px]">
+                  <i className="far fa-calendar-alt text-[#2C68FF] text-[12px]"></i>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[12px] text-[#333] font-bold mb-[1px]">出行日期</span>
+                  <div className="flex items-center">
+                    <span className="text-[12px] text-[#666] mr-[8px]">
+                      {startDate ? formatDateLabel : '请选择日期'}
+                    </span>
+                    {startDate && (
+                      <span className="bg-[#F5F6F8] text-[#999] text-[9px] px-[6px] py-[2px] rounded-[4px]">
+                        共{totalDays}天{totalDays > 1 ? `${totalDays - 1}晚` : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <i className="fas fa-angle-right text-[#CCC] text-[16px]"></i>
+            </div>
+
+            <div className="w-full h-[1px] bg-[#F5F5F5] ml-[34px]"></div>
+
+            {/* Travelers */}
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-[6px]">
+                <div className="flex items-center">
+                  <div className="w-[24px] h-[24px] bg-[#F0F5FF] rounded-full flex items-center justify-center mr-[10px]">
+                    <i className="fas fa-user-friends text-[#2C68FF] text-[12px]"></i>
+                  </div>
+                  <span className="text-[12px] text-[#333] font-bold">同行人员</span>
+                </div>
+                <i className="fas fa-angle-right text-[#CCC] text-[16px]"></i>
+              </div>
+              <div className="flex justify-between pl-[34px]">
+                <Stepper label="成人" value={adults} min={1} onChange={setAdults} />
+                <div className="w-[1px] h-[26px] bg-[#F5F5F5] mt-[14px]"></div>
+                <Stepper label="儿童" value={children} onChange={setChildren} />
+                <div className="w-[1px] h-[26px] bg-[#F5F5F5] mt-[14px]"></div>
+                <Stepper label="老人" value={elders} onChange={setElders} />
+              </div>
+            </div>
+          </div>
+
+          {/* Pace */}
+          <div className="bg-white rounded-[16px] p-[16px] shadow-sm">
+            <div className="flex items-center mb-[16px]">
+              <div className="w-[24px] h-[24px] bg-[#E8F8F0] rounded-full flex items-center justify-center mr-[8px]">
+                <i className="fas fa-leaf text-[#53B782] text-[12px]"></i>
+              </div>
+              <span className="text-[14px] text-[#333] font-bold">行程节奏</span>
+            </div>
+            <div className="flex justify-between gap-[6px]">
+              {PACE_OPTIONS.map(item => {
+                const selected = pace === item.id
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setPace(item.id)}
+                    className={`flex-1 h-[72px] rounded-[10px] flex flex-col items-center justify-center p-[2px] relative cursor-pointer border-[1.5px] transition-all ${
+                      selected ? 'border-[#2C68FF] bg-[#F4F7FF]' : 'border-[#F5F6F8] bg-white'
+                    }`}
+                  >
+                    <span className={`text-[11px] font-medium mb-[4px] ${selected ? 'text-[#2C68FF]' : 'text-[#333]'}`}>{item.id}</span>
+                    <i className={`fas ${item.icon} text-[14px] mb-[4px]`} style={{ color: item.iconColor }}></i>
+                    <span className="text-[9px] text-[#999] text-center leading-[1.2] whitespace-nowrap scale-90 origin-center">{item.desc1}</span>
+                    <span className="text-[9px] text-[#999] text-center leading-[1.2] whitespace-nowrap scale-90 origin-center">{item.desc2}</span>
+                    {selected && (
+                      <div className="absolute -top-[1px] -right-[1px] w-[18px] h-[18px] bg-[#2C68FF] rounded-bl-[10px] rounded-tr-[8px] flex items-center justify-center">
+                        <i className="fas fa-check text-white text-[10px]"></i>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Budget */}
+          <div className="bg-white rounded-[16px] p-[16px] shadow-sm">
+            <div className="flex items-center mb-[16px]">
+              <div className="w-[24px] h-[24px] bg-[#FFF3E8] rounded-full flex items-center justify-center mr-[8px]">
+                <i className="fas fa-wallet text-[#F5A623] text-[12px]"></i>
+              </div>
+              <span className="text-[15px] text-[#333] font-bold">消费方式</span>
+            </div>
+            <div className="flex justify-between gap-[4px]">
+              {BUDGET_OPTIONS.map(item => {
+                const selected = budget === item.id
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setBudget(item.id)}
+                    className={`flex-1 h-[56px] rounded-[8px] flex flex-col items-center justify-center p-[2px] relative cursor-pointer border-[1.5px] transition-all ${
+                      selected ? 'border-[#2C68FF] bg-[#F4F7FF]' : 'border-[#F5F6F8] bg-[#FAFAFA]'
+                    }`}
+                  >
+                    <span className={`text-[13px] font-medium mb-[2px] whitespace-nowrap scale-95 origin-center ${selected ? 'text-[#2C68FF]' : 'text-[#333]'}`}>{item.id}</span>
+                    <span className="text-[11px] text-[#999] text-center leading-tight whitespace-nowrap scale-90 origin-center">{item.desc}</span>
+                    {selected && (
+                      <div className="absolute -top-[1px] -right-[1px] w-[16px] h-[16px] bg-[#2C68FF] rounded-bl-[8px] rounded-tr-[6px] flex items-center justify-center">
+                        <i className="fas fa-check text-white text-[9px]"></i>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Special needs */}
+          <div className="bg-white rounded-[16px] p-[16px] shadow-sm">
+            <div className="flex items-center justify-between mb-[16px]">
+              <div className="flex items-center">
+                <div className="w-[24px] h-[24px] bg-[#FFEAEA] rounded-full flex items-center justify-center mr-[8px]">
+                  <i className="fas fa-heart text-[#F85A5A] text-[12px]"></i>
+                </div>
+                <span className="text-[15px] text-[#333] font-bold">管家特别照顾</span>
+                <span className="text-[12px] text-[#999] ml-[6px]">(可多选)</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-[10px] mb-[16px]">
+              {SPECIAL_NEEDS.map(item => {
+                const isSelected = selectedNeeds.includes(item.id)
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleNeed(item.id)}
+                    className={`px-[12px] py-[6px] rounded-full flex items-center text-[12px] border cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-[#F4F7FF] border-[#2C68FF]/50 text-[#2C68FF]'
+                        : 'bg-[#FAFAFA] border-transparent text-[#666] hover:bg-[#F5F6F8]'
+                    }`}
+                  >
+                    {item.icon && <i className={`fas ${item.icon} mr-[4px] text-[11px] ${isSelected ? 'text-[#2C68FF]' : 'text-[#999]'}`}></i>}
+                    {item.id}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Notes */}
+            <div className="w-full bg-[#FAFAFA] rounded-[10px] p-[12px] relative">
+              <div className="flex">
+                <i className="far fa-comment-dots text-[#999] text-[14px] mt-[2px] mr-[4px]"></i>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value.slice(0, 60))}
+                  className="flex-1 bg-transparent text-[11px] text-[#333] placeholder-[#999] appearance-none border-0 outline-none focus:outline-none focus:ring-0 resize-none h-[50px]"
+                  placeholder={`还有其他想告诉管家的吗？\n例如：妈妈膝盖不好，尽量少爬楼；晚上想吃清淡一点`}
+                />
+              </div>
+              <div className="absolute bottom-[8px] right-[12px] text-[11px] text-[#CCC]">{notes.length}/60</div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-[12px] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+              <i className="fas fa-exclamation-circle text-red-500"></i>
+              {error}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Form card */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <ItineraryForm />
+      {/* Bottom sticky button */}
+      <div className="fixed bottom-0 left-0 w-full bg-white px-[20px] py-[12px] pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] z-50">
+        <div className="max-w-3xl mx-auto">
+          <button
+            onClick={handleSubmit}
+            className="w-full h-[48px] bg-[#1B5CFF] rounded-[24px] flex items-center justify-center text-white text-[16px] font-bold cursor-pointer shadow-[0_4px_12px_rgba(27,92,255,0.3)] hover:bg-[#0A4AE0] transition-colors"
+          >
+            <i className="fas fa-magic text-[16px] mr-[6px]"></i> 让管家推荐景点
+          </button>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showDateSelect && (
+        <DateSelectModal
+          onClose={() => setShowDateSelect(false)}
+          onConfirm={(date, days) => {
+            setStartDate(date)
+            setTotalDays(days)
+            setShowDateSelect(false)
+          }}
+        />
+      )}
+      {showDepCitySelect && (
+        <CitySelectModal
+          title="选择出发地"
+          currentCity={departureCity.name}
+          onSelect={city => { setDepartureCity(city); setShowDepCitySelect(false) }}
+          onClose={() => setShowDepCitySelect(false)}
+        />
+      )}
+      {showDestCitySelect && (
+        <CitySelectModal
+          title="选择目的地"
+          currentCity={destCity.name}
+          onSelect={city => { setDestCity(city); setShowDestCitySelect(false) }}
+          onClose={() => setShowDestCitySelect(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function Stepper({
+  label,
+  value,
+  min = 0,
+  onChange,
+}: {
+  label: string
+  value: number
+  min?: number
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="flex flex-col items-center">
+      <span className="text-[11px] text-[#666] mb-[2px]">{label}</span>
+      <div className="flex items-center">
+        <button
+          onClick={() => value > min && onChange(value - 1)}
+          className="w-[22px] h-[22px] bg-[#F5F6F8] rounded-full flex items-center justify-center text-[#CCC] cursor-pointer"
+        >
+          <i className="fas fa-minus text-[10px]"></i>
+        </button>
+        <span className="w-[26px] text-center text-[13px] text-[#333] font-medium">{value}</span>
+        <button
+          onClick={() => onChange(value + 1)}
+          className="w-[22px] h-[22px] bg-[#F5F6F8] rounded-full flex items-center justify-center text-[#333] cursor-pointer"
+        >
+          <i className="fas fa-plus text-[10px]"></i>
+        </button>
       </div>
     </div>
   )

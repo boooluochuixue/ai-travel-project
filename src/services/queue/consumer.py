@@ -184,10 +184,31 @@ def _build_user_message(request: dict) -> str:
     destinations = request.get("destinations", [])
     preferences = request.get("preferences", {})
     total_budget = request.get("total_budget")
+    departure_city = request.get("departure_city", "")
+    travelers = request.get("travelers", {})
+    special_needs = request.get("special_needs", [])
+    notes = request.get("notes", "")
 
     parts = ["请帮我规划一次旅行。"]
+
+    if departure_city:
+        parts.append(f"出发城市：{departure_city}")
+
     dest_str = "、".join(f"{d.get('city_name', '')}({d.get('days', 1)}天)" for d in destinations)
     parts.append(f"目的地：{dest_str}")
+
+    adults = travelers.get("adults", 2)
+    children = travelers.get("children", 0)
+    elders = travelers.get("elders", 0)
+    travelers_parts = []
+    if adults:
+        travelers_parts.append(f"{adults}位成人")
+    if children:
+        travelers_parts.append(f"{children}位儿童")
+    if elders:
+        travelers_parts.append(f"{elders}位老人")
+    if travelers_parts:
+        parts.append(f"出行人员：{'、'.join(travelers_parts)}")
 
     interests = preferences.get("interests", [])
     if interests:
@@ -203,6 +224,12 @@ def _build_user_message(request: dict) -> str:
 
     if total_budget:
         parts.append(f"总预算：{total_budget}元")
+
+    if special_needs:
+        parts.append(f"特别需求：{'、'.join(special_needs)}")
+
+    if notes:
+        parts.append(f"备注：{notes}")
 
     parts.append("\n请先生成一个整体行程规划框架，然后逐步细化到每天的安排。")
     parts.append("最终用 JSON 格式输出完整行程。")
