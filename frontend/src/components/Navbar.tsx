@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Route, MapPin, List } from 'lucide-react'
+import { Route, List, Compass } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -17,12 +17,16 @@ export function Navbar() {
 
         <div className="flex items-center gap-1">
           <NavLink href="/" active={pathname === '/'}>
-            <MapPin className="w-4 h-4" />
-            规划行程
+            <Compass className="w-4 h-4" />
+            首页
+          </NavLink>
+          <NavLink href="/plan/create" active={pathname === '/plan/create'}>
+            <List className="w-4 h-4" />
+            创建计划
           </NavLink>
           <NavLink href="/itineraries" active={pathname.startsWith('/itineraries')}>
             <List className="w-4 h-4" />
-            我的行程
+            行程列表
           </NavLink>
         </div>
       </div>
