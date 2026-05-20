@@ -61,6 +61,11 @@ export async function searchPois(params: {
 
 export async function generateItinerary(data: {
   destinations: Destination[]
+  departure_city?: string
+  departure_city_id?: number
+  travelers?: { adults: number; children: number; elders: number }
+  special_needs?: string[]
+  notes?: string
   preferences?: Partial<Preference>
   total_budget?: number
 }): Promise<ApiResponse<{ task_id: string; status: string }>> {
