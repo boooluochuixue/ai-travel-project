@@ -188,6 +188,7 @@ def _build_user_message(request: dict) -> str:
     travelers = request.get("travelers", {})
     special_needs = request.get("special_needs", [])
     selected_poi_ids = request.get("selected_poi_ids", [])
+    selected_hotel = request.get("selected_hotel")
     notes = request.get("notes", "")
 
     parts = ["请帮我规划一次旅行。"]
@@ -231,6 +232,11 @@ def _build_user_message(request: dict) -> str:
 
     if selected_poi_ids:
         parts.append(f"用户已选定的景点ID：{selected_poi_ids}，请优先将这些景点纳入行程规划")
+
+    if selected_hotel:
+        hotel_name = selected_hotel.get("name", "")
+        hotel_location = selected_hotel.get("location", "")
+        parts.append(f"用户选择的酒店：{hotel_name}（{hotel_location}），请以此酒店作为每日行程的出发点进行路线规划")
 
     if notes:
         parts.append(f"备注：{notes}")
