@@ -13,15 +13,25 @@ export default function PlanGenerating({
   onComplete,
   onBack,
   onLater,
+  externalProgress,
+  externalStep,
 }: {
   onComplete: () => void
   onBack: () => void
   onLater: () => void
+  externalProgress?: number
+  externalStep?: number
 }) {
   const [progress, setProgress] = useState(0)
   const [step, setStep] = useState(0)
 
+  const isControlled = externalProgress !== undefined && externalStep !== undefined
+  const displayProgress = isControlled ? externalProgress! : progress
+  const displayStep = isControlled ? externalStep! : step
+
   useEffect(() => {
+    if (isControlled) return
+
     setProgress(100)
 
     const startTime = Date.now()
@@ -38,9 +48,9 @@ export default function PlanGenerating({
     }, 100)
 
     return () => clearInterval(interval)
-  }, [onComplete])
+  }, [onComplete, isControlled])
 
-  const activeTitle = step < 4 ? GENERATION_STEPS[step].title : '正在生成方案'
+  const activeTitle = displayStep < 4 ? GENERATION_STEPS[displayStep].title : '正在生成方案'
 
   return (
     <div className="min-h-screen bg-[#F4F8FF] flex flex-col items-center relative overflow-y-auto pb-[180px]">
@@ -80,11 +90,11 @@ export default function PlanGenerating({
           <div className="w-full h-[10px] bg-[#EAF0FF] rounded-full overflow-hidden relative">
             <div
               className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#2B70FF] to-[#0055FF] rounded-full transition-all duration-[4000ms] ease-linear"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${displayProgress}%` }}
             />
           </div>
           <div className="text-center mt-[8px]">
-            <span className="text-[12px] text-[#999999]">已完成 {step}/4 步</span>
+            <span className="text-[12px] text-[#999999]">已完成 {displayStep}/4 步</span>
           </div>
         </div>
 
@@ -96,14 +106,14 @@ export default function PlanGenerating({
               <div className="absolute inset-0 border-l-[2px] border-dashed border-[#CCCCCC] -ml-[2px]" />
               <div
                 className="absolute top-0 left-0 w-full bg-[#2B70FF] transition-all duration-[4000ms] ease-linear"
-                style={{ height: `${progress}%` }}
+                style={{ height: `${displayProgress}%` }}
               />
             </div>
 
             {GENERATION_STEPS.map((item, index) => {
-              const isCompleted = step > index
-              const isCurrent = step === index
-              const isPending = step < index
+              const isCompleted = displayStep > index
+              const isCurrent = displayStep === index
+              const isPending = displayStep < index
 
               return (
                 <div

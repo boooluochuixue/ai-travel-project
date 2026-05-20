@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+import PlanGenerating from '@/components/PlanGenerating'
 import { generateItinerary, streamGeneration } from '@/lib/api'
 
 const FILTER_OPTIONS = ['近景点', '高评分', '含早餐', '双床房', '免费取消']
@@ -99,14 +100,6 @@ interface Hotel {
   img: string
 }
 
-const PROGRESS_STAGES = [
-  'AI 正在分析旅行需求...',
-  '正在搜索景点信息...',
-  '正在规划行程安排...',
-  '正在推荐住宿酒店...',
-  '正在生成最终方案...',
-]
-
 function HotelSelectPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -150,7 +143,7 @@ function HotelSelectPage() {
     setStageIdx(0)
 
     const stageTimer = setInterval(() => {
-      setStageIdx(prev => Math.min(prev + 1, PROGRESS_STAGES.length - 1))
+      setStageIdx(prev => Math.min(prev + 1, 4))
     }, 8000)
 
     let cancelled = false
@@ -237,30 +230,19 @@ function HotelSelectPage() {
   // Loading overlay
   if (loading) {
     return (
-      <div className="w-full min-h-full bg-gradient-to-b from-[#EBF2FF] to-[#F5F6F8] flex flex-col items-center justify-center px-[32px]">
-        <div className="w-full max-w-sm mx-auto text-center">
-          <div className="w-[64px] h-[64px] rounded-full bg-white shadow-[0_4px_16px_rgba(44,104,255,0.15)] flex items-center justify-center mx-auto mb-[24px]">
-            <i className="fas fa-magic text-[#2C68FF] text-[28px] animate-pulse"></i>
-          </div>
-          <div className="text-[17px] font-bold text-[#333] mb-[8px]">AI 正在为你规划行程</div>
-          <div className="text-[13px] text-[#999] mb-[24px]">{stageIdx + 1}/{PROGRESS_STAGES.length} {PROGRESS_STAGES[stageIdx]}</div>
-
-          <div className="w-full bg-white/60 rounded-full h-[6px] mb-[16px]">
-            <div className="bg-[#2C68FF] h-[6px] rounded-full transition-all duration-500 ease-out" style={{ width: `${Math.max(3, progress)}%` }}></div>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-[#999] max-w-[280px] mx-auto">
-            {PROGRESS_STAGES.map((_, i) => (
-              <div key={i} className={`w-[8px] h-[8px] rounded-full ${i <= stageIdx ? 'bg-[#2C68FF]' : 'bg-[#D0D8E8]'}`}></div>
-            ))}
-          </div>
-
-          <div className="mt-[32px] text-[12px] text-[#999]">
-            <i className="fas fa-spinner fa-spin mr-[4px]"></i>
-            请耐心等待，通常需要 1-2 分钟
-          </div>
-        </div>
-      </div>
+      <PlanGenerating
+        onComplete={() => {}}
+        onBack={() => {
+          abortRef.current?.()
+          setLoading(false)
+        }}
+        onLater={() => {
+          abortRef.current?.()
+          setLoading(false)
+        }}
+        externalProgress={progress}
+        externalStep={Math.min(stageIdx, 3)}
+      />
     )
   }
 
