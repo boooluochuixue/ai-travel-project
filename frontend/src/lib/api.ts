@@ -65,6 +65,7 @@ export async function generateItinerary(data: {
   departure_city_id?: number
   travelers?: { adults: number; children: number; elders: number }
   special_needs?: string[]
+  selected_poi_ids?: number[]
   notes?: string
   preferences?: Partial<Preference>
   total_budget?: number
