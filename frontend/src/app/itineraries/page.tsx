@@ -51,7 +51,7 @@ export default function ItineraryListPage() {
           <p className="text-gray-500 mt-1">共 {itineraries.length} 个行程</p>
         </div>
         <Link
-          href="/"
+          href="/plan/create"
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <MapPin className="w-4 h-4" />
@@ -67,7 +67,7 @@ export default function ItineraryListPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-1">还没有行程</h3>
               <p className="text-gray-500 mb-4">开始你的第一次 AI 旅行规划吧</p>
               <Link
-                href="/"
+                href="/plan/create"
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 <MapPin className="w-4 h-4" />
