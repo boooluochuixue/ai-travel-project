@@ -41,7 +41,7 @@ export default function ItineraryDetailPage({ params }: { params: Promise<{ id: 
     setConfirming(true)
     try {
       await confirmItinerary(itinerary.id)
-      setItinerary({ ...itinerary, status: 'confirmed' })
+      router.push('/')
     } catch {
       // handle error
     } finally {
