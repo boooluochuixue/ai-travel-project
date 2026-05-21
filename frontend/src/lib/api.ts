@@ -197,6 +197,10 @@ export async function confirmItinerary(id: number): Promise<ApiResponse<null>> {
   return request(`/api/v1/itineraries/${id}/confirm`, { method: 'POST' })
 }
 
+export async function unconfirmItinerary(id: number): Promise<ApiResponse<null>> {
+  return request(`/api/v1/itineraries/${id}/unconfirm`, { method: 'POST' })
+}
+
 export async function refinItinerary(
   id: number,
   feedback: string,
