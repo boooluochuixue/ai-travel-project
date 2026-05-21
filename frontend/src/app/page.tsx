@@ -151,7 +151,10 @@ export default function HomePage() {
                       3
                     </div>
                   </div>
-                  <div className="text-[10px] text-[#999] flex items-center cursor-pointer shrink-0">
+                  <div
+                    className="text-[10px] text-[#999] flex items-center cursor-pointer shrink-0"
+                    onClick={() => router.push('/today-reminder')}
+                  >
                     查看全部 <i className="fas fa-angle-right ml-[2px]"></i>
                   </div>
                 </div>
