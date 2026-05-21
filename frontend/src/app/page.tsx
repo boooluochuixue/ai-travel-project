@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
-import { listItineraries, confirmItinerary } from '@/lib/api'
+import { listItineraries, confirmItinerary, unconfirmItinerary } from '@/lib/api'
 import type { Itinerary } from '@/types'
 
 const CITY_IMAGES: Record<string, string> = {
@@ -62,23 +62,39 @@ export default function HomePage() {
 
   async function handleToggle(itinerary: Itinerary) {
     if (itinerary.status === 'confirmed') {
-      // Toggle off — just a UI switch, no API to revert
+      // Toggle off — unconfirm
+      try {
+        await unconfirmItinerary(itinerary.id)
+        setItineraries(prev =>
+          prev.map(it =>
+            it.id === itinerary.id ? { ...it, status: 'draft' as const } : it,
+          ),
+        )
+      } catch {
+        setItineraries(prev =>
+          prev.map(it =>
+            it.id === itinerary.id ? { ...it, status: 'draft' as const } : it,
+          ),
+        )
+      }
       return
     }
-    // Toggle on — confirm the draft
+    // Toggle on — confirm the draft, unconfirm all others
     try {
       await confirmItinerary(itinerary.id)
       setItineraries(prev =>
-        prev.map(it =>
-          it.id === itinerary.id ? { ...it, status: 'confirmed' as const } : it,
-        ),
+        prev.map(it => ({
+          ...it,
+          status: it.id === itinerary.id ? 'confirmed' as const : 'draft' as const,
+        })),
       )
     } catch {
       // API not available, toggle UI anyway
       setItineraries(prev =>
-        prev.map(it =>
-          it.id === itinerary.id ? { ...it, status: 'confirmed' as const } : it,
-        ),
+        prev.map(it => ({
+          ...it,
+          status: it.id === itinerary.id ? 'confirmed' as const : 'draft' as const,
+        })),
       )
     }
   }
@@ -225,10 +241,13 @@ export default function HomePage() {
                 <i className="fas fa-map-marker-alt mr-[4px] text-[13px]"></i> 查看路线
               </div>
             </div>
-            <div className="relative z-10 bg-white rounded-full h-[44px] w-full flex items-center px-[16px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] shrink-0">
+            <div
+              className="relative z-10 bg-white rounded-full h-[44px] w-full flex items-center px-[16px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] shrink-0 cursor-pointer"
+              onClick={() => router.push('/plan/chat')}
+            >
               <i className="far fa-comment-dots text-[#999] text-[16px] mr-[8px]"></i>
               <div className="flex-1 text-[#999] text-[13px]">问问旅行管家...</div>
-              <div className="w-[28px] h-[28px] bg-[#126DFF] rounded-full flex items-center justify-center text-white cursor-pointer ml-[8px] shadow-sm">
+              <div className="w-[28px] h-[28px] bg-[#126DFF] rounded-full flex items-center justify-center text-white ml-[8px] shadow-sm pointer-events-none">
                 <i className="fas fa-paper-plane text-[12px] ml-[2px] mt-[1px]"></i>
               </div>
             </div>
