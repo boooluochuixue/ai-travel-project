@@ -214,6 +214,29 @@ async def confirm_itinerary(
     return {"code": 0, "message": "行程已确认"}
 
 
+@router.post("/{itinerary_id}/unconfirm")
+async def unconfirm_itinerary(
+    itinerary_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Itinerary).where(Itinerary.id == itinerary_id)
+    )
+    itinerary = result.scalar_one_or_none()
+    if not itinerary:
+        return {"code": 40400, "message": "行程不存在", "data": None}
+
+    query = (
+        update(Itinerary)
+        .where(Itinerary.id == itinerary_id)
+        .values(status=ItineraryStatus.draft)
+    )
+    await db.execute(query)
+    await db.commit()
+
+    return {"code": 0, "message": "行程已取消确认"}
+
+
 @router.post("/{itinerary_id}/days/{day_number}/select-hotel")
 async def select_hotel(
     itinerary_id: int,
